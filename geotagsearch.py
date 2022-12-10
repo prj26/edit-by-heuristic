@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-
-# Sample Python code for youtube.search.list
-# See instructions for running these code samples locally:
-# https://developers.google.com/explorer-help/code-samples#python
-
 import os, json
 
 import googleapiclient.discovery
@@ -13,7 +7,7 @@ import download
 def getSearchResponse(searchq, locationString, locationRadiusString, maxresults=25):
     api_service_name = "youtube"
     api_version = "v3"
-    DEVELOPER_KEY = "AIzaSyBfvZgeLMA8QtDTrUJkBDld0gdW_dp2Srk"
+    DEVELOPER_KEY = os.getenv("YOUTUBEAPIKEY")
 
     youtube = googleapiclient.discovery.build(
         api_service_name, api_version, developerKey=DEVELOPER_KEY)
