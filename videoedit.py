@@ -121,10 +121,10 @@ def renderVideoFromCutList(filenamesToClips, cutList, startTimes, maxFade=5):
         audioClipCopy = filenamesToClips[filename].set_start(startTimes[filename])
         #audioClipCopy = audioClipCopy.subclip(shotIndexedStart[i],shotIndexedEnd[i])
 
-        firstZeroPoint = midrights[i-1]
-        firstOnePoint = midlefts[i]
-        secondOnePoint = midrights[i]
-        secondZeroPoint = midlefts[i+1]
+        firstZeroPoint = midrights[i-1] - startTimes[filename]
+        firstOnePoint = midlefts[i] - startTimes[filename]
+        secondOnePoint = midrights[i] - startTimes[filename]
+        secondZeroPoint = midlefts[i+1] - startTimes[filename]
         print("printing times for video",shotFilenames[i],"in shot",i)
         print("firstZeroPoint",firstZeroPoint,"firstOnePoint",firstOnePoint,"secondOnePoint",secondOnePoint,"secondZeroPoint",secondZeroPoint)
         print("formatted:")
@@ -135,6 +135,7 @@ def renderVideoFromCutList(filenamesToClips, cutList, startTimes, maxFade=5):
             print("assertionerror thrown on i=",i)
             print("firstZeroPoint",firstZeroPoint,"firstOnePoint",firstOnePoint,"secondOnePoint",secondOnePoint,"secondZeroPoint",secondZeroPoint)
             raise
+
         def fun(gf, t, i=i, firstZeroPoint=firstZeroPoint, firstOnePoint=firstOnePoint, secondOnePoint=secondOnePoint, secondZeroPoint=secondZeroPoint):
 
 
@@ -142,7 +143,6 @@ def renderVideoFromCutList(filenamesToClips, cutList, startTimes, maxFade=5):
                 return gf(t)
             elif len(gf(t).shape) == 3:
                 return gf(t)
-
             #print("t:",t)
             #print("middle t:",t[t.size//2])
             volume_multiplier = numpy.interp(t, [firstZeroPoint, firstOnePoint, secondOnePoint, secondZeroPoint], [0, 1, 1, 0])

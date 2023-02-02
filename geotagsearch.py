@@ -1,4 +1,5 @@
 import os, json
+import datetime
 
 import googleapiclient.discovery
 import download
@@ -28,18 +29,32 @@ def getSearchResponse(searchq, locationString, locationRadiusString, maxresults=
 def filterByVideoTitle(item, searchq):
     return matchesRequest(item["snippet"]["title"], searchq)
 
+def filterByDate(item, searchq, firstDatetime, secondDatetime):
+    return firstDatetime <= ytStringToDatetime(item["snippet"]["publishedAt"]) < secondDatetime
+
+def filterByTitleAndDate(item, searchq, firstDatetime, secondDatetime):
+    return filterByVideoTitle(item, searchq) and filterByDate(item, searchq, firstDatetime, secondDatetime)
+
 
 def matchesRequest(videoTitle, searchq):
     return min(word in videoTitle.lower().split(" ") for word in searchq.lower().split(" "))
+
+def ytStringToDatetime(string):
+    return datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%SZ")
+
 
 
 def urlsFromSearchWithFilter(func, searchq, locationString, locationRadiusString, maxresults=25):
     r = getSearchResponse(searchq, locationString, locationRadiusString, maxresults)
     results = []
     for item in r["items"]:
+
+
         if func(item):
             results.append(item["id"]["videoId"])
+
     return results
+
 
 
 

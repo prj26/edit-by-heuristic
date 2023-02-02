@@ -66,7 +66,7 @@ def optimizeTest():
     #s = start_times[result.filename] + clipsDict[result.filename].duration
     #print("the sum of these is",s,"("+videoedit.formatTime(s)+")")
     combined = videoedit.renderVideoFromCutList(clipsDict, artificial_history, start_times)
-    combined.subclip(0,80).resize(width=480).write_videofile(output, fps=30)
+    combined.resize(width=480).write_videofile(output, fps=30)
     #clipsDict[filenames[3]].write_audiofile(audio_output,fps=30)
 
 def test_audio_transition():
@@ -94,4 +94,4 @@ def test_audio_transition():
 
 
 if __name__ == "__main__":
-    optimizeTest()
+    filterWembley("foo fighters the pretender")
