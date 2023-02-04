@@ -28,6 +28,23 @@ def downloadUrls(urls):
         download.downloadURL(urls[i], "C:\\Users\\User\\Music\\folder\\vid" + str(i) + '.%(ext)s')
 
 
+def getFrame(filename):
+    # partially adapted from a stackoverflow answer
+    # https://stackoverflow.com/questions/42163058/how-to-turn-a-video-into-numpy-array
+    import cv2
+    cap = cv2.VideoCapture(filename)
+    frameCount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    fc = 0
+    ret = True
+
+    while (fc < frameCount and ret):
+        ret, a = cap.read()
+        return a
+
+    cap.release()
+
+
 
 pretend1 = 'C:\\Users\\User\\Documents\\PartIIProject\\projectvideoeditor\\thepretender-CIskdB33wnw.mp4'
 pretend2 = 'C:\\Users\\User\\Documents\\PartIIProject\\projectvideoeditor\\thepretender-o6xQj-a_aqI.mp4'
@@ -56,16 +73,16 @@ def optimizeTest():
     print("start_times")
     print(", ".join([name + ":" + videoedit.formatTime(start_times[name]) for name in filenames]))
     optimizer = coreoptimizer.FrameTimelinesOptimizer(filenames, start_times)
-    #result = optimizer.optimizeWithFixedCosts(coreoptimizer.brightheuristic, 1, 360)
-    #print(result)
-    #print(result.cutHistory)
-    #print("result's filename's start time is",start_times[result.filename])
-    #print("result's filename's video's duration is",clipsDict[result.filename].duration)
-    from coreoptimizer import Cut
-    artificial_history = [Cut(24.0,filenames[3],33.85175421196406,filenames[5]), Cut(226.181888994814, filenames[5], 228.13097234274753, filenames[2]),Cut(341.7314772338804, filenames[2], 345.6838333333333, filenames[4]), Cut(369.7078333333333, filenames[4], 373.2871730369729, filenames[2]), Cut(417.46514716130235,filenames[2], 420.0, filenames[3]),Cut(420.0, filenames[3], 424.52234048962737, filenames[5])]
-    #s = start_times[result.filename] + clipsDict[result.filename].duration
-    #print("the sum of these is",s,"("+videoedit.formatTime(s)+")")
-    combined = videoedit.renderVideoFromCutList(clipsDict, artificial_history, start_times)
+    result = optimizer.optimizeWithFixedCosts(coreoptimizer.tenegrad_sobel_heuristic, 1, 360)
+    print(result)
+    print(result.cutHistory)
+    print("result's filename's start time is",start_times[result.filename])
+    print("result's filename's video's duration is",clipsDict[result.filename].duration)
+    #from coreoptimizer import Cut
+    #artificial_history = [Cut(24.0,filenames[3],33.85175421196406,filenames[5]), Cut(226.181888994814, filenames[5], 228.13097234274753, filenames[2]),Cut(341.7314772338804, filenames[2], 345.6838333333333, filenames[4]), Cut(369.7078333333333, filenames[4], 373.2871730369729, filenames[2]), Cut(417.46514716130235,filenames[2], 420.0, filenames[3]),Cut(420.0, filenames[3], 424.52234048962737, filenames[5])]
+    s = start_times[result.filename] + clipsDict[result.filename].duration
+    print("the sum of these is",s,"("+videoedit.formatTime(s)+")")
+    combined = videoedit.renderVideoFromCutList(clipsDict, result.cutHistory, start_times)
     combined.resize(width=480).write_videofile(output, fps=30)
     #clipsDict[filenames[3]].write_audiofile(audio_output,fps=30)
 
@@ -94,4 +111,10 @@ def test_audio_transition():
 
 
 if __name__ == "__main__":
-    filterWembley("foo fighters the pretender")
+    while True:
+        locationString = input("Enter location string: ")
+        results = geotagsearch.geocode(locationString)
+        if len(results) == 0:
+            print("No results for '"+locationString+"'")
+        else:
+            print("Top result:",geotagsearch.coordsFromGeocodeResult(results[0]))

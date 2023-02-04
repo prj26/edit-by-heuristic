@@ -3,7 +3,16 @@ import datetime
 
 import googleapiclient.discovery
 import download
+import googlemaps
 
+gmaps = googlemaps.Client(key=os.genenv("MAPSAPIKEY"))
+
+def geocode(string):
+    return gmaps.geocode(string)
+
+def coordsFromGeocodeResult(result):
+    location =result["geometry"]["location"]
+    return location["lat"], location["lng"]
 
 def getSearchResponse(searchq, locationString, locationRadiusString, maxresults=25):
     api_service_name = "youtube"
@@ -24,6 +33,8 @@ def getSearchResponse(searchq, locationString, locationRadiusString, maxresults=
     response = request.execute()
 
     return response
+
+
 
 
 def filterByVideoTitle(item, searchq):

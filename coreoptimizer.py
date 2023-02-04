@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import scipy as sp
 
 import videoedit
 
@@ -71,6 +72,7 @@ class FrameTimelineIterator():
         else:
             del self.nextFrame
 
+
 class NFrameTimelineIterator():
     def __init__(self, frameTimelineIterator, multiple):
         self.frameTimelineIterator = frameTimelineIterator
@@ -120,6 +122,7 @@ class NFrameTimelineIterator():
             del self.nextFrame
             print("deleted nextFrame, so it might be null now")
 
+
 class Cut():
     def __init__(self, timeBefore, filenameBefore, timeAfter, filenameAfter):
         self.timeBefore = timeBefore
@@ -128,7 +131,9 @@ class Cut():
         self.filenameAfter = filenameAfter
 
     def __repr__(self):
-        return "<Cut from " + self.filenameBefore + "(" + str(self.timeBefore) + ") at " + videoedit.formatTime(self.timeBefore) + "to " + self.filenameAfter + "(" + str(self.timeAfter) + ") at " + videoedit.formatTime(self.timeAfter) + " >"
+        return "<Cut from " + self.filenameBefore + "(" + str(self.timeBefore) + ") at " + videoedit.formatTime(
+            self.timeBefore) + "to " + self.filenameAfter + "(" + str(self.timeAfter) + ") at " + videoedit.formatTime(
+            self.timeAfter) + " >"
 
 
 class OptimizationState():
@@ -156,7 +161,7 @@ class OptimizationState():
 
     def __repr__(self):
         return "<state id:" + str(self.uniqueStateIndex) + " f:" + self.filename + ", current:" + str(
-            self.currentTime) + " ("+videoedit.formatTime(self.currentTime)+"), expiry:" + str(
+            self.currentTime) + " (" + videoedit.formatTime(self.currentTime) + "), expiry:" + str(
             self.expiryTime) + ">"
 
 
@@ -197,7 +202,7 @@ class FrameTimelinesOptimizer():
             nextExpiry = min(i.expiryTime for i in states)
             dprint("considering next expiry:")
             for state in states:
-                dprint("  state",state,"has hasNextFrame value",state.currentIterator.hasNextFrame)
+                dprint("  state", state, "has hasNextFrame value", state.currentIterator.hasNextFrame)
             dprint("nextExpiry:", nextExpiry)
             if len([i.currentTime for i in states if i.currentTime > currentTime]) > 0:
                 nextCurrent = min(i.currentTime for i in states if i.currentTime > currentTime)
@@ -207,8 +212,8 @@ class FrameTimelinesOptimizer():
             if nextCurrent < nextExpiry:
                 nextTime = nextCurrent
                 frameWillExpire = False
-                print("bringing nextCurrent in: currentTime is",videoedit.formatTime(currentTime))
-                print("and NEXTTIME is",videoedit.formatTime(nextTime))
+                print("bringing nextCurrent in: currentTime is", videoedit.formatTime(currentTime))
+                print("and NEXTTIME is", videoedit.formatTime(nextTime))
             else:
                 nextTime = nextExpiry
                 frameWillExpire = True
@@ -216,11 +221,11 @@ class FrameTimelinesOptimizer():
             # increment states
             for state in states:
                 if state.currentTime < nextTime:
-                    dprint("  Commencing incrementTime for state with filename",state.filename)
-                    dprint("  before, state time is ",state.currentTime)
+                    dprint("  Commencing incrementTime for state with filename", state.filename)
+                    dprint("  before, state time is ", state.currentTime)
                     state.incrementTime(delta)
                     state.currentTime = nextTime
-                    dprint("  after, state time is",state.currentTime)
+                    dprint("  after, state time is", state.currentTime)
                     # ^ technically unecessary but I'm paranoid about floating point errors
             if frameWillExpire:
                 dprint("at least one frame expires this iteration")
@@ -230,7 +235,7 @@ class FrameTimelinesOptimizer():
                 toRemove = []
                 for expiredState in expiredStates:
                     expiredState.hasIterated = False
-                #check for states with no successort and add them to toRemove
+                # check for states with no successort and add them to toRemove
                 for expiredState in expiredStates:
                     if not expiredState.hasIterated:
                         if expiredState.currentIterator.hasNextFrame:
@@ -251,7 +256,7 @@ class FrameTimelinesOptimizer():
                     dprint("removing expired state with no next frame from expiredStates")
                     dprint("(no point looking for histories for a state that doesn't exist)")
                     expiredStates.remove(toRemoveState)
-                    print("removing expired state",toRemoveState.filename,"at",videoedit.formatTime(currentTime))
+                    print("removing expired state", toRemoveState.filename, "at", videoedit.formatTime(currentTime))
                     states.remove(toRemoveState)
 
                 possibleNextStates = []
@@ -261,7 +266,8 @@ class FrameTimelinesOptimizer():
                     for state in states:
                         if state.currentTime == nextTime and state.hasValidHistory:
                             possibleState = OptimizationState(expiredState.currentIterator, expiredState.filename,
-                                                              state.currentTotalScore if expiredState.filename == state.filename else state.currentTotalScore - cutCost, nextTime,
+                                                              state.currentTotalScore if expiredState.filename == state.filename else state.currentTotalScore - cutCost,
+                                                              nextTime,
                                                               nextTime + expiredState.currentIterator.frameDuration,
                                                               expiredState.cutHistory if expiredState.filename == state.filename else state.cutHistory + [
                                                                   Cut(state.startTime, state.filename, nextTime,
@@ -294,7 +300,7 @@ class FrameTimelinesOptimizer():
                 print("processed", totalFramesProcessed, "frames out of", totalFramesToProcess)
                 print((totalFramesProcessed / totalFramesToProcess) * 100, "% complete")
                 print("number of optimization states:", len(states))
-                print("currentTime:", currentTime,"("+videoedit.formatTime(currentTime)+")")
+                print("currentTime:", currentTime, "(" + videoedit.formatTime(currentTime) + ")")
 
         bestFinalState = states[0]
         print("getting a final state")
@@ -302,13 +308,15 @@ class FrameTimelinesOptimizer():
             if state.currentTotalScore > bestFinalState.currentTotalScore:
                 bestFinalState = state
         print("printing state info to resolve discrepancy")
-        print("bestFinalState.filename is ",bestFinalState.filename)
-        print("start_times[bestFinalState.filename] is ",self.start_times[bestFinalState.filename])
+        print("bestFinalState.filename is ", bestFinalState.filename)
+        print("start_times[bestFinalState.filename] is ", self.start_times[bestFinalState.filename])
         from moviepy.editor import VideoFileClip
-        print("duration of the VideoFileClip corresponding to this filename is ",VideoFileClip(bestFinalState.filename).duration)
-        print("state iterator fps is ",bestFinalState.currentIterator.fps)
-        print("state iterator frame count is",bestFinalState.currentIterator.getTotalFrameCount())
-        print("duration extrapolated from frame count and fps is ",bestFinalState.currentIterator.getTotalFrameCount()/bestFinalState.currentIterator.fps)
+        print("duration of the VideoFileClip corresponding to this filename is ",
+              VideoFileClip(bestFinalState.filename).duration)
+        print("state iterator fps is ", bestFinalState.currentIterator.fps)
+        print("state iterator frame count is", bestFinalState.currentIterator.getTotalFrameCount())
+        print("duration extrapolated from frame count and fps is ",
+              bestFinalState.currentIterator.getTotalFrameCount() / bestFinalState.currentIterator.fps)
 
         return bestFinalState
 
@@ -342,11 +350,13 @@ class FrameTimelinesOptimizer():
             print("\n".join(log))
             raise ValueError("identical files left over, throwing exception")
 
+
 def product(array):
     p = 1
     for item in array:
         p *= item
     return p
+
 
 def brightheuristic(frame, duration):
     if frame is None:
@@ -356,3 +366,41 @@ def brightheuristic(frame, duration):
 
 def darkheuristic(frame, duration):
     return -brightheuristic(frame, duration)
+
+
+def tenegrad_sobel_heuristic_unseparated(frame, duration):
+    # from https://www.spiedigitallibrary.org/conference-proceedings-of-spie/6502/65020B/Autofocus-survey-a-comparison-of-algorithms/10.1117/12.705386.pdf
+    Gx = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
+    Gy = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
+    singleColourFrame = frame.sum(2)
+    convolveMode = 'same'
+    convolveBoundary = 'symm'
+    Gxij = sp.signal.convolve2d(singleColourFrame, Gx, mode=convolveMode, boundary=convolveBoundary)
+    Gyij = sp.signal.convolve2d(singleColourFrame, Gy, mode=convolveMode, boundary=convolveBoundary)
+    fitnessPerPixel = np.sqrt(np.square(Gxij) + np.square(Gyij))
+    totalFitness = fitnessPerPixel.sum()
+    return totalFitness * duration / (product(np.shape(frame)) * 255)
+
+
+def tenegrad_sobel_heuristic(frame, duration):
+    # from https://www.spiedigitallibrary.org/conference-proceedings-of-spie/6502/65020B/Autofocus-survey-a-comparison-of-algorithms/10.1117/12.705386.pdf
+
+    gx1 = np.array([[-1, 0, 1]])
+    gx2 = np.array([[1], [2], [1]])
+
+    gy1 = np.array([[1, 2, 1]])
+    gy2 = np.array([[1], [0], [-1]])
+
+    singleColourFrame = frame.sum(2)
+    convolveMode = 'same'
+    convolveBoundary = 'symm'
+
+    gxi = sp.signal.convolve2d(singleColourFrame, gx2, mode=convolveMode, boundary=convolveBoundary)
+    gxij = sp.signal.convolve2d(gxi, gx1, mode=convolveMode, boundary=convolveBoundary)
+
+    gyi = sp.signal.convolve2d(singleColourFrame, gy2, mode=convolveMode, boundary=convolveBoundary)
+    gyij = sp.signal.convolve2d(gyi, gy1, mode=convolveMode, boundary=convolveBoundary)
+
+    fitnessPerPixel = np.sqrt(np.square(gxij) + np.square(gyij))
+    totalFitness = fitnessPerPixel.sum()
+    return totalFitness * duration / (product(np.shape(frame)) * 255)
