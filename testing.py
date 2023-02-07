@@ -111,10 +111,4 @@ def test_audio_transition():
 
 
 if __name__ == "__main__":
-    while True:
-        locationString = input("Enter location string: ")
-        results = geotagsearch.geocode(locationString)
-        if len(results) == 0:
-            print("No results for '"+locationString+"'")
-        else:
-            print("Top result:",geotagsearch.coordsFromGeocodeResult(results[0]))
+    import gui

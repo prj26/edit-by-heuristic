@@ -5,7 +5,7 @@ import googleapiclient.discovery
 import download
 import googlemaps
 
-gmaps = googlemaps.Client(key=os.genenv("MAPSAPIKEY"))
+gmaps = googlemaps.Client(key=os.getenv("MAPSAPIKEY"))
 
 def geocode(string):
     return gmaps.geocode(string)
@@ -55,16 +55,18 @@ def ytStringToDatetime(string):
 
 
 
-def urlsFromSearchWithFilter(func, searchq, locationString, locationRadiusString, maxresults=25):
+def urlsAndItemsFromSearchWithFilter(func, searchq, locationString, locationRadiusString, maxresults=25):
     r = getSearchResponse(searchq, locationString, locationRadiusString, maxresults)
     results = []
+    items = []
     for item in r["items"]:
 
 
         if func(item):
             results.append(item["id"]["videoId"])
+            items.append(item)
 
-    return results
+    return results, items
 
 
 

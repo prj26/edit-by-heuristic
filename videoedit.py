@@ -22,7 +22,7 @@ def viewComposed(in_files):
     joined = ffmpeg.concat(v1, a1, v2, a2, v=1, a=1).node
     v3 = joined[0]
     a3 = joined[1].filter('volume', 0.8)
-    out = ffmpeg.output(v3, a3, 'out.mp4')
+    out = ffmpeg.output(v3, a3, testing.output)
     out.run()
 """
 
