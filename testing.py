@@ -5,8 +5,11 @@ import geotagsearch
 import videoedit
 import audiosync
 import coreoptimizer
-import json
 
+import json
+import os
+import datetime
+import random
 
 def filterWembley(searchq):
     return geotagsearch.urlsFromSearchWithFilter(lambda x: geotagsearch.filterByVideoTitle(x, searchq), searchq,
@@ -110,5 +113,78 @@ def test_audio_transition():
     clip1.resize(width=480).write_videofile(test_output, fps=30)
 
 
+
+
+def make_subclips(filenames, start_times, duration, destinationFolder):
+    startTime = max([start_times[i] for i in filenames])
+    endTime = min(min([start_times[i]+audiosync.getVideoDuration(i) for i in filenames]), startTime+duration)
+    index = 0
+    for filename in filenames:
+        print("calling make_subclip with times",startTime - start_times[filename], endTime - start_times[filename])
+        videoedit.make_subclip(filename, startTime - start_times[filename], endTime - start_times[filename], destinationFolder+"\\extract"+str(index)+".mp4", 480, 30)
+        index += 1
+
+def make_subclip_folder(filenames, start_times, duration, destinationFolderLocation, destinationFolderName):
+    newFolderPath = destinationFolderLocation+"\\"+destinationFolderName
+    os.mkdir(newFolderPath)
+    print("make_subclip_folder called with duration=",duration)
+    make_subclips(filenames, start_times, duration, newFolderPath)
+
+def timeOptimizer(filenames):
+    start_times = {i:0 for i in filenames}
+    heuristic = lambda frame,duration:(coreoptimizer.tenegrad_sobel_heuristic(frame, duration) * coreoptimizer.brightheuristic(frame, duration))
+
+    #start timer
+    before = datetime.datetime.now()
+
+    optimizer = coreoptimizer.FrameTimelinesOptimizer(filenames, start_times)
+    result = optimizer.optimizeWithFixedCosts(heuristic, 1, 1)
+
+    #finish timer
+    after = datetime.datetime.now()
+
+    difference = after - before
+    return difference.total_seconds()
+
+def timeOptimizerFromFolder(folderPath):
+    filenames = [folderPath+"\\extract"+str(i)+".mp4" for i in range(5)]
+    return timeOptimizer(filenames)
+
+def timeOptimizerBatch(folderPath, testNumbers):
+    results = []
+    for testNumber in testNumbers:
+        results.append(timeOptimizerFromFolder(folderPath+"\\test"+str(testNumber)))
+    return results
+
+def benchmark():
+    benchmarkPath = "C:\\Users\\User\\Documents\\PartIIProject\\projectvideoeditor\\benchmark tests"
+    dictionaries = []
+    for i in range(3):
+        tests = list(range(10,110,10))
+        random.shuffle(tests)
+        print("running tests",tests)
+        results = timeOptimizerBatch(benchmarkPath, tests)
+        d = {}
+        for j in range(len(tests)):
+            d[tests[j]] = results[j]
+            print("writing ",results[j],"to dictionary index",tests[j])
+        dictionaries.append(d)
+    for dictionary in dictionaries:
+        print("test result:")
+        for index in range(10,110,10):
+            print(dictionary[index])
+
+def make_all_subclip_folders(filenames, start_times, destinationFolderLocation):
+    #figure out maximum duration
+    startTime = max([start_times[i] for i in filenames])
+    endTime = min([start_times[i]+audiosync.getVideoDuration(i) for i in filenames])
+    print("make_all_subclip_folders start time is",startTime,"and end time is",endTime)
+    duration = endTime - startTime
+    print("so duration is",duration)
+    for percentage in range(10, 110, 10):
+        print("percentage is",percentage)
+        make_subclip_folder(filenames, start_times, duration * percentage / 100, destinationFolderLocation, "test"+str(percentage))
+
 if __name__ == "__main__":
     import gui
+

@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+# THIS CONTAINS A MODIFICATION OF SYNCSTART, WHICH IS NOT MY OWN CODE
+# EACH SECTION WILL BE MARKED AS EITHER VERBATIM FROM THE ORIGINAL
+# OR MARKED AS MODIFIED
+
+# I would just import it normally, but it is necessary to modify some functions
+# to ensure that correlations are strong enough to be meaningful
+# and not just the highest random correlation present
+
+#VERBATIM
 """
 The steps taken by ``syncstart``:
 
@@ -25,13 +34,7 @@ from syncstart import file_offset
 file_offset
 
 """
-# THIS CONTAINS A MODIFICATION OF SYNCSTART, WHICH IS NOT MY OWN CODE
-# EACH SECTION WILL BE MARKED AS EITHER VERBATIM FROM THE ORIGINAL
-# OR MARKED AS MODIFIED
 
-# I would just import it normally, but it is necessary to modify some functions
-# to ensure that correlations are strong enough to be meaningful
-# and not just the highest random correlation present
 
 # VERBATIM
 import matplotlib
@@ -149,8 +152,9 @@ def read_normalized(in1, in2):
     return fs, s1, s2
 
 
-# VERBATIM
+# MODIFIED
 def corrabs(s1, s2):
+    # this section is verbatim
     ls1 = len(s1)
     ls2 = len(s2)
     padsize = ls1 + ls2 + 1
@@ -270,6 +274,9 @@ def getVideoDuration(filename):
     # taken from stackoverflow comments on answer
     # https://stackoverflow.com/questions/3844430/how-to-get-the-duration-of-a-video-in-python
     cap = cv2.VideoCapture(filename)
+    framerate = cap.get(cv2.CAP_PROP_FPS)
+    if framerate == 0:
+        return 0
     duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
     return duration
 
@@ -302,7 +309,7 @@ class ComparableLink:
         return (self.song1, self.song2, self.linkStrength)
 
 
-def constructTimeline(filenames):
+def constructTimeline(filenames, progressHook=lambda x:1):
     offset_table = {}
     # offset_table[(song,base)] = ('using base as the reference timeline, what is the offset of song?',strength)
 
@@ -317,6 +324,12 @@ def constructTimeline(filenames):
 
     durations = {name: getVideoDuration(name) for name in filenames}
     print("durations:",durations)
+    for name in filenames:
+        if durations[name] == 0:
+            return "Could not find duration for '"+name+"' - please remove this file and try again"
+
+    progressTotal = (len(filenames) * (len(filenames)-1))/2
+    progressSoFar = 0
 
     for i in range(len(filenames)):
         for j in range(i):
@@ -332,7 +345,10 @@ def constructTimeline(filenames):
                     strength = 0
             offset_table[(filenames[i], filenames[j])] = (-time, strength)
             offset_table[(filenames[j], filenames[i])] = (time, strength)
+            print("using",filenames[i],"as a base, the offset of",filenames[j],"is",time,"with strength",strength)
             links.append(ComparableLink(filenames[i], filenames[j], strength))
+            progressSoFar += 1
+            progressHook(progressSoFar/progressTotal)
         offset_table[(filenames[i], filenames[i])] = (0, float("inf"))
         connected_clusters[filenames[i]] = {filenames[i]}
         direct_connections[filenames[i]] = set()
@@ -364,7 +380,8 @@ def constructTimeline(filenames):
             print("connected_clusters:", connected_clusters)
             print("direct_connections:", direct_connections)
             linksLeft -= 1
-
+        else:
+            print("ignoring redundant link from", nextLink.song1, "to", nextLink.song2)
         linkIndex -= 1
 
     # direct_connections now describes a spanning tree: next step is to find the first video, the one with the lowest offset from any given node
@@ -393,5 +410,8 @@ def constructTimeline(filenames):
                 calculate_start_times(neighbour, filenameOffset + offset_table[(neighbour, filename)][0], filename)
 
     calculate_start_times(firstVideo, 0, None)
+
+    for filename in filenames:
+        print(filename,"starts at",start_time[filename],"and ends at",start_time[filename]+durations[filename])
 
     return start_time

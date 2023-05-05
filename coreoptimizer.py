@@ -171,7 +171,7 @@ class FrameTimelinesOptimizer():
         self.frameTimelines = [FrameTimeline(filename, startTimes[filename]) for filename in filenames]
         self.start_times = startTimes
 
-    def optimizeWithFixedCosts(self, frameHeuristic, cutCost, resolutionRreciprocal=1):
+    def optimizeWithFixedCosts(self, frameHeuristic, cutCost, resolutionRreciprocal=1, progressHook=lambda x:1):
         # make iterators
         if resolutionRreciprocal == 1:
             iterators = [i.getIterator() for i in self.frameTimelines]
@@ -191,11 +191,13 @@ class FrameTimelinesOptimizer():
         print([iterator.getTotalFrameCount() for iterator in iterators])
         nextFramePrint = 1
         # repeat while there are still iterators running
-        debugPrints = True
+        debugPrints = False
 
         def dprint(*args, **kwargs):
             if debugPrints:
                 print(*args, **kwargs)
+
+        lastPercentage = 0
 
         while max(i.hasNextFrame for i in iterators):
             # get next point in time to jump to
@@ -212,8 +214,8 @@ class FrameTimelinesOptimizer():
             if nextCurrent < nextExpiry:
                 nextTime = nextCurrent
                 frameWillExpire = False
-                print("bringing nextCurrent in: currentTime is", videoedit.formatTime(currentTime))
-                print("and NEXTTIME is", videoedit.formatTime(nextTime))
+                dprint("bringing nextCurrent in: currentTime is", videoedit.formatTime(currentTime))
+                dprint("and NEXTTIME is", videoedit.formatTime(nextTime))
             else:
                 nextTime = nextExpiry
                 frameWillExpire = True
@@ -240,7 +242,7 @@ class FrameTimelinesOptimizer():
                     if not expiredState.hasIterated:
                         if expiredState.currentIterator.hasNextFrame:
                             if expiredState.currentIterator.nextFrame is None:
-                                print("(in optimizer) object claims to have next frame but nextframe is actually none")
+                                dprint("(in optimizer) object claims to have next frame but nextframe is actually none")
                             dprint("iterating expired state's iterator", expiredState)
 
                             expiredState.currentIterator.iterate()
@@ -256,7 +258,7 @@ class FrameTimelinesOptimizer():
                     dprint("removing expired state with no next frame from expiredStates")
                     dprint("(no point looking for histories for a state that doesn't exist)")
                     expiredStates.remove(toRemoveState)
-                    print("removing expired state", toRemoveState.filename, "at", videoedit.formatTime(currentTime))
+                    dprint("removing expired state", toRemoveState.filename, "at", videoedit.formatTime(currentTime))
                     states.remove(toRemoveState)
 
                 possibleNextStates = []
@@ -295,12 +297,20 @@ class FrameTimelinesOptimizer():
                 debugPrints = True
             else:
                 debugPrints = False
+
             if totalFramesProcessed == nextFramePrint or debugPrints:
                 nextFramePrint *= 2
                 print("processed", totalFramesProcessed, "frames out of", totalFramesToProcess)
                 print((totalFramesProcessed / totalFramesToProcess) * 100, "% complete")
                 print("number of optimization states:", len(states))
                 print("currentTime:", currentTime, "(" + videoedit.formatTime(currentTime) + ")")
+
+            currentPercentage = int((totalFramesProcessed / totalFramesToProcess) * 100)
+            if currentPercentage >= lastPercentage:
+                lastPercentage = currentPercentage
+                # this method of estimating the percentage of the video processed isn't 100% accurate
+                # the division by 105 is a fudge factor
+                progressHook(currentPercentage / 105)
 
         bestFinalState = states[0]
         print("getting a final state")
@@ -321,6 +331,12 @@ class FrameTimelinesOptimizer():
         return bestFinalState
 
     def reduceFramesOnly(self, statesToReduce):
+        debugPrints = False
+
+        def dprint(*args, **kwargs):
+            if debugPrints:
+                print(*args, **kwargs)
+
         bestForEachFilename = {}
         for state in statesToReduce:
             if state.filename not in bestForEachFilename:
@@ -343,9 +359,10 @@ class FrameTimelinesOptimizer():
         for toRemoveState in toRemove:
             statesToReduce.remove(toRemoveState)
         if len(statesToReduce) > 1:
-            print("bestForEachFilename:", bestForEachFilename)
-            print("bestForEachFilename values are ", list(bestForEachFilename.values()))
-            print("statesToReduce:", statesToReduce)
+
+            dprint("bestForEachFilename:", bestForEachFilename)
+            dprint("bestForEachFilename values are ", list(bestForEachFilename.values()))
+            dprint("statesToReduce:", statesToReduce)
         if len(set([i.filename for i in statesToReduce])) != len(statesToReduce):
             print("\n".join(log))
             raise ValueError("identical files left over, throwing exception")
