@@ -11,10 +11,14 @@ import os
 import datetime
 import random
 
+# this file mostly performs specific functions for ease of testing
+# e.g. providing cached results from earlier steps in the program
+# or utility tools only used in debugging
+# this is mostly 'write-only' code
+
 def filterWembley(searchq):
     return geotagsearch.urlsFromSearchWithFilter(lambda x: geotagsearch.filterByVideoTitle(x, searchq), searchq,
                                                  "51.556027024933016, -0.2796255654208833", "0.75km", 120)
-
 
 def printjson(o):
     print(json.dumps(o, sort_keys=True, indent=4))
@@ -159,7 +163,7 @@ def timeOptimizerBatch(folderPath, testNumbers):
 def benchmark():
     benchmarkPath = "C:\\Users\\User\\Documents\\PartIIProject\\projectvideoeditor\\benchmark tests"
     dictionaries = []
-    for i in range(3):
+    for i in range(7):
         tests = list(range(10,110,10))
         random.shuffle(tests)
         print("running tests",tests)
@@ -174,6 +178,14 @@ def benchmark():
         for index in range(10,110,10):
             print(dictionary[index])
 
+def timeVideos():
+    folderPath = "C:\\Users\\User\\Documents\\PartIIProject\\projectvideoeditor\\benchmark tests\\test100"
+    results = []
+    for v in [2,3,4,5]:
+        filenames = [folderPath+"\\extract"+str(i)+".mp4" for i in range(v)]
+        results.append(timeOptimizer(filenames))
+    return results
+
 def make_all_subclip_folders(filenames, start_times, destinationFolderLocation):
     #figure out maximum duration
     startTime = max([start_times[i] for i in filenames])
@@ -186,5 +198,5 @@ def make_all_subclip_folders(filenames, start_times, destinationFolderLocation):
         make_subclip_folder(filenames, start_times, duration * percentage / 100, destinationFolderLocation, "test"+str(percentage))
 
 if __name__ == "__main__":
-    import gui
+    print(timeVideos())
 

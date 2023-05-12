@@ -22,7 +22,7 @@ def videoFrameGenerator(filename):
 
     cap.release()
 
-
+#wraps over opencv to provide instances of FrameTimelineIterator
 class FrameTimeline():
     def __init__(self, filename, startTime):
         self.filename = filename
@@ -42,7 +42,7 @@ class FrameTimeline():
         iterator = FrameTimelineIterator(self)
         return NFrameTimelineIterator(iterator, multiple)
 
-
+#maintains state for iterating over a video file
 class FrameTimelineIterator():
     def __init__(self, frameTimeline):
         self.filename = frameTimeline.filename
@@ -72,7 +72,7 @@ class FrameTimelineIterator():
         else:
             del self.nextFrame
 
-
+#decorates FrameTimelineIterator to act as a lower-framerate file for efficiency reasons
 class NFrameTimelineIterator():
     def __init__(self, frameTimelineIterator, multiple):
         self.frameTimelineIterator = frameTimelineIterator
@@ -122,7 +122,7 @@ class NFrameTimelineIterator():
             del self.nextFrame
             print("deleted nextFrame, so it might be null now")
 
-
+#stores information about a single cut
 class Cut():
     def __init__(self, timeBefore, filenameBefore, timeAfter, filenameAfter):
         self.timeBefore = timeBefore
@@ -135,7 +135,7 @@ class Cut():
             self.timeBefore) + "to " + self.filenameAfter + "(" + str(self.timeAfter) + ") at " + videoedit.formatTime(
             self.timeAfter) + " >"
 
-
+#represents a current frame and its history +misc metadata
 class OptimizationState():
     uniqueStateIndex = 0
 
@@ -164,7 +164,7 @@ class OptimizationState():
             self.currentTime) + " (" + videoedit.formatTime(self.currentTime) + "), expiry:" + str(
             self.expiryTime) + ">"
 
-
+#executes the main algorithm
 class FrameTimelinesOptimizer():
     def __init__(self, filenames, startTimes):
         self.filenames = filenames
@@ -193,6 +193,7 @@ class FrameTimelinesOptimizer():
         # repeat while there are still iterators running
         debugPrints = False
 
+        # (used in debugging only)
         def dprint(*args, **kwargs):
             if debugPrints:
                 print(*args, **kwargs)
@@ -215,7 +216,7 @@ class FrameTimelinesOptimizer():
                 nextTime = nextCurrent
                 frameWillExpire = False
                 dprint("bringing nextCurrent in: currentTime is", videoedit.formatTime(currentTime))
-                dprint("and NEXTTIME is", videoedit.formatTime(nextTime))
+                dprint("and nextTime is", videoedit.formatTime(nextTime))
             else:
                 nextTime = nextExpiry
                 frameWillExpire = True
@@ -267,6 +268,8 @@ class FrameTimelinesOptimizer():
                     # produce a list of possible histories for the next frame
                     for state in states:
                         if state.currentTime == nextTime and state.hasValidHistory:
+                            #this line formatted by IDE
+                            #not sure if it's better but I'm sure there's reasons
                             possibleState = OptimizationState(expiredState.currentIterator, expiredState.filename,
                                                               state.currentTotalScore if expiredState.filename == state.filename else state.currentTotalScore - cutCost,
                                                               nextTime,
@@ -293,12 +296,10 @@ class FrameTimelinesOptimizer():
                 dprint("no frames expired")
             currentTime = nextTime
             totalFramesProcessed += 1
-            if currentTime > 315:
-                debugPrints = True
-            else:
-                debugPrints = False
 
             if totalFramesProcessed == nextFramePrint or debugPrints:
+                # this is printed regardless of whether the more verbose debugPrints is set
+                # the slowdown is only logarithmic, because it prints exponentially rarely
                 nextFramePrint *= 2
                 print("processed", totalFramesProcessed, "frames out of", totalFramesToProcess)
                 print((totalFramesProcessed / totalFramesToProcess) * 100, "% complete")
@@ -313,26 +314,28 @@ class FrameTimelinesOptimizer():
                 progressHook(currentPercentage / 105)
 
         bestFinalState = states[0]
-        print("getting a final state")
+        dprint("getting a final state")
         for state in states:
             if state.currentTotalScore > bestFinalState.currentTotalScore:
                 bestFinalState = state
-        print("printing state info to resolve discrepancy")
-        print("bestFinalState.filename is ", bestFinalState.filename)
-        print("start_times[bestFinalState.filename] is ", self.start_times[bestFinalState.filename])
+        dprint("printing state info to resolve discrepancy")
+        dprint("bestFinalState.filename is ", bestFinalState.filename)
+        dprint("start_times[bestFinalState.filename] is ", self.start_times[bestFinalState.filename])
         from moviepy.editor import VideoFileClip
-        print("duration of the VideoFileClip corresponding to this filename is ",
+        dprint("duration of the VideoFileClip corresponding to this filename is ",
               VideoFileClip(bestFinalState.filename).duration)
-        print("state iterator fps is ", bestFinalState.currentIterator.fps)
-        print("state iterator frame count is", bestFinalState.currentIterator.getTotalFrameCount())
-        print("duration extrapolated from frame count and fps is ",
+        dprint("state iterator fps is ", bestFinalState.currentIterator.fps)
+        dprint("state iterator frame count is", bestFinalState.currentIterator.getTotalFrameCount())
+        dprint("duration extrapolated from frame count and fps is ",
               bestFinalState.currentIterator.getTotalFrameCount() / bestFinalState.currentIterator.fps)
 
         return bestFinalState
 
     def reduceFramesOnly(self, statesToReduce):
-        debugPrints = False
+        # removes suboptimal redundant states
 
+        # (used for debugging)
+        debugPrints = False
         def dprint(*args, **kwargs):
             if debugPrints:
                 print(*args, **kwargs)
@@ -369,6 +372,7 @@ class FrameTimelinesOptimizer():
 
 
 def product(array):
+    #calculates product of a list
     p = 1
     for item in array:
         p *= item
@@ -376,17 +380,20 @@ def product(array):
 
 
 def brightheuristic(frame, duration):
+    #calculates average pixel rgb value
     if frame is None:
         print("brightHeuristic recieved None as input")
     return duration * frame.sum() / (product(np.shape(frame)) * 255)
 
 
 def darkheuristic(frame, duration):
+    #negation of bright heuristic
     return -brightheuristic(frame, duration)
 
 
 def tenegrad_sobel_heuristic_unseparated(frame, duration):
-    # from https://www.spiedigitallibrary.org/conference-proceedings-of-spie/6502/65020B/Autofocus-survey-a-comparison-of-algorithms/10.1117/12.705386.pdf
+    # algorithm (not implementation) from
+    # https://www.spiedigitallibrary.org/conference-proceedings-of-spie/6502/65020B/Autofocus-survey-a-comparison-of-algorithms/10.1117/12.705386.pdf
     Gx = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
     Gy = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
     singleColourFrame = frame.sum(2)
@@ -400,7 +407,8 @@ def tenegrad_sobel_heuristic_unseparated(frame, duration):
 
 
 def tenegrad_sobel_heuristic(frame, duration):
-    # from https://www.spiedigitallibrary.org/conference-proceedings-of-spie/6502/65020B/Autofocus-survey-a-comparison-of-algorithms/10.1117/12.705386.pdf
+    # algorithm (not implementation) from
+    # https://www.spiedigitallibrary.org/conference-proceedings-of-spie/6502/65020B/Autofocus-survey-a-comparison-of-algorithms/10.1117/12.705386.pdf
 
     gx1 = np.array([[-1, 0, 1]])
     gx2 = np.array([[1], [2], [1]])

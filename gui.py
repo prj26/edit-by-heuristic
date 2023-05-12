@@ -14,11 +14,9 @@ import audiosync
 import coreoptimizer
 import videoedit
 
-
-
-
 RESULTS_DISPLAY_LIMIT = 10
 
+#constructs the tkinter elements for operating the core optimizer
 class OptimizerContent():
     def __init__(self, window, contentFrame):
         self.window = window
@@ -97,48 +95,27 @@ class OptimizerContent():
         self.nextStageReady = False
 
     def destroy(self):
-
         self.cutCostRow.destroy()
-
         self.cutCostLabel.destroy()
-
         self.cutCostEntry.destroy()
-
         self.selectHeuristicLabel.destroy()
-
         self.sumHeuristicRow.destroy()
-
         self.sumHeuristicRadioButton.destroy()
-
         self.sumHeuristicWeightedLabel.destroy()
-
         self.sumHeuristicFocusWeightEntry.destroy()
-
         self.sumHeuristicFocusLabel.destroy()
-
         self.sumHeuristicBrightnessWeightEntry.destroy()
-
         self.sumHeuristicBrightnessLabel.destroy()
-
         self.productHeuristicRow.destroy()
-
         self.productHeuristicRadioButton.destroy()
-
         self.productHeuristicLabel.destroy()
 
-
         self.runButtonRow.destroy()
-
         self.runButton.destroy()
-
         self.batchTickBox.destroy()
-
         self.batchLabel.destroy()
-
         self.nFramesEntry.destroy()
-
         self.framesTogetherLabel.destroy()
-
         self.progressBar.destroy()
 
     def onSetFocus(self):
@@ -149,7 +126,7 @@ class OptimizerContent():
         self.feedbackLabel['text'] = text
 
     def onRunButton(self):
-        print("run button pressed")
+        print("Run button pressed")
         cutCostString = self.cutCostEntry.get()
         try:
             cutCostFloat = float(cutCostString)
@@ -211,9 +188,9 @@ class OptimizerContent():
     def getInfoDict(self):
         return {"cut_history":self.cut_history}
 
+#constructs the tkinter elements for audio sync
 class AudioSyncContent():
     def __init__(self, window, contentFrame):
-        #todo: make state visible
         self.window = window
         self.contentFrame = contentFrame
         self.syncFinished = False
@@ -289,6 +266,7 @@ class AudioSyncContent():
             d[syncedFile.filename] = syncedFileFloat
         return {"start_times":d}
 
+#contains the elements for displaying audio sync results inside AudioSyncContent
 class SyncedFile():
     def __init__(self, outerFrame, labelText):
         self.outerFrame = outerFrame
@@ -315,6 +293,7 @@ class SyncedFile():
     def get(self):
         return self.entryBox.get()
 
+#constructs the tkinter elements for rendering and exporting the final video
 class ExportContent():
     def __init__(self, window, contentFrame):
         self.window = window
@@ -371,8 +350,8 @@ class ExportContent():
         self.window.setBackButtonUsable(not self.exportInProgress)
 
     def onRenderButton(self):
-        print("render button clicked, here's the info dict")
-        print(window.infoDict)
+        print("Render button pressed")
+        print("Current state",window.infoDict)
         widthString = self.widthEntry.get()
         # valdate user width input
         try:
@@ -385,7 +364,7 @@ class ExportContent():
         fadeString = self.fadeEntry.get()
         #validate user audio fade time input
         try:
-            fadeFloat = int(fadeString)
+            fadeFloat = float(fadeString)
             assert(fadeFloat >= 0)
         except:
             self.setFeedback("The audio fade time must be a real value greater than 0")
@@ -425,7 +404,6 @@ class ExportContent():
                 cutTime = window.infoDict["start_times"][vid1]
                 cut = coreoptimizer.Cut(cutTime,vid2,cutTime,vid1)
             cutlist = [cut]
-        #DEBUG END
         else:
             cutlist = self.window.infoDict["cut_history"]
 
@@ -434,12 +412,11 @@ class ExportContent():
     def startRenderProcess(self, clipsDict, cutlist, fadeFloat, widthInt, fpsFloat, outputPath):
         x = threading.Thread(target=self.renderThread, daemon=True, args=(clipsDict, cutlist, fadeFloat, widthInt, fpsFloat, outputPath))
         x.start()
-        print("render process started")
-
-
+        print("Render process started")
 
     def renderThread(self, clipsDict, cutlist, fadeFloat, widthInt, fpsFloat, outputPath):
-        print("thread started")
+        print("Render thread started")
+        self.setFeedback("Normalising audio...")
         combined = videoedit.renderVideoFromCutList(clipsDict, cutlist, window.infoDict["start_times"], maxFade=fadeFloat)
 
         self.audioProportion = 0.2
@@ -510,6 +487,7 @@ class ExportContent():
         self.renderButton.destroy()
         self.progressBar.destroy()
 
+#constructs the tkinter elements for downloading the videos and adding files manually
 class DownloadContent():
     def __init__(self, window, contentFrame):
         self.window = window
@@ -632,6 +610,7 @@ class DownloadContent():
             filenames.append((manualVideo.url))
         return {"filenames":filenames}
 
+#constructs the tkinter elements for performing Geotag searches
 class GeotagSearchContent():
     def __init__(self, window, contentFrame):
         self.mainColumnFrame = contentFrame
@@ -775,7 +754,7 @@ class GeotagSearchContent():
             if mustMatchExactly:
                 func = lambda item: geotagsearch.filterByTitleAndDate(item, songName, date1, date2)
             else:
-                func = lambda item: geotagsearch.filterByDate(item, date1, date2)
+                func = lambda item: geotagsearch.filterByDate(item, "", date1, date2)
         else:
             if mustMatchExactly:
                 func = lambda item: geotagsearch.filterByVideoTitle(item, songName)
@@ -954,6 +933,7 @@ class GeotagSearchContent():
         d["titles"] = titles
         return d
 
+#contains the elements for displaying a video that can be downloaded, used in multiple content frames
 class SelectableVideo():
     def __init__(self, outerFrame, url, title, buttonchar, onButtonPress):
         self.onButtonPress = onButtonPress
@@ -986,6 +966,7 @@ class SelectableVideo():
         self.urlButton.destroy()
         self.rightButton.destroy()
 
+#contains the elements for a currently-downloading video with loading bar
 class DownloadingVideo():
     def __init__(self, outerFrame, url, title, endText):
         self.outerFrame = outerFrame
@@ -997,10 +978,7 @@ class DownloadingVideo():
         self.url = url
         self.progressBar = Progressbar(self.innerLeftFrame)
 
-        # self.rightText = Frame(self.innerFrame, text=endText)
-
     def pack(self):
-        # self.rightText.pack(anchor=E, side=RIGHT, expand=1, fill=Y)
         self.innerFrame.pack(side=TOP, anchor=W, fill=X)
         self.innerLeftFrame.pack(side=LEFT, expand=1, fill=X)
         self.titleText.pack(anchor=W)
@@ -1016,8 +994,9 @@ class DownloadingVideo():
         self.titleText.destroy()
         self.urlButton.destroy()
         self.progressBar.destroy()
-        # self.rightText.destroy()
 
+#contains the back/next buttons, data that persists between content frames,
+#and whichever content frame is current active
 class Window():
     def __init__(self, root, temp_path):
         self.root = root

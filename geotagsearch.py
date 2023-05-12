@@ -54,7 +54,7 @@ def filterByTitleAndDate(item, searchq, firstDatetime, secondDatetime):
 def matchesRequest(videoTitle, searchq):
     # checks that a video title actually contains all of the words the user entered
     # (this is not guaranteed by Youtube)
-    return min(word in videoTitle.lower().split(" ") for word in searchq.lower().split(" "))
+    return min(word in [titleword.strip("'\",") for titleword in videoTitle.lower().split(" ")] for word in searchq.lower().split(" "))
 
 def ytStringToDatetime(string):
     #converts the upload date string that Youtube returns into a python datetime object

@@ -5,29 +5,6 @@ from math import sqrt, ceil
 import numpy
 import ffmpeg
 
-"""
-def vidArrayFromFilenames(filenames):
-    #ffmpeg-python version
-    a = []
-    for filename in filenames:
-        a.append(ffmpeg.input(filename))
-    return a
-
-def viewComposed(in_files):
-    in1 = in_files[0]
-    in2 = in_files[0]
-    v1 = in1.video.hflip()
-    a1 = in1.audio
-    v2 = in2.video.filter('reverse').filter('hue', s=0)
-    a2 = in2.audio.filter('areverse').filter('aphaser')
-    joined = ffmpeg.concat(v1, a1, v2, a2, v=1, a=1).node
-    v3 = joined[0]
-    a3 = joined[1].filter('volume', 0.8)
-    out = ffmpeg.output(v3, a3, testing.output)
-    out.run()
-"""
-
-
 def vidArrayFromFilenames(filenames):
     # moviepy version
     a = []
@@ -46,6 +23,7 @@ def vidDictionaryFromFilenames(filenames):
 
 
 def formatTime(seconds):
+    #formats time for display, used in debugging
     assert (seconds >= 0)
     s = str(int(seconds % 60))
     return str(int(seconds // 60)) + ":" + ("0" * (2 - len(s))) + s
@@ -54,6 +32,7 @@ def formatTime(seconds):
 placeholderVideo = ColorClip((20, 20), (0, 0, 0), duration=1 / 60)
 
 def make_subclip(filename, startInsideClip, endInsideClip, destination, width=None, fps=None):
+    #cuts a cubclip out from a source clip
     clip = VideoFileClip(filename)
     clip = clip.subclip(startInsideClip, endInsideClip)
     if width != None:
@@ -65,7 +44,7 @@ def make_subclip(filename, startInsideClip, endInsideClip, destination, width=No
 
 
 def viewTimeline(clips):
-    # moviepy version
+    # renders all the clips side-by-side
     clipCountWidth = int(ceil(sqrt(len(clips))))
     clipCountHeight = ceil(len(clips) / clipCountWidth)
     print("width:", clipCountWidth, "height:", clipCountHeight)
@@ -85,6 +64,8 @@ def viewTimeline(clips):
 
 
 def renderVideoFromCutList(filenamesToClips, cutList, startTimes, maxFade=5):
+    # takes the cutlist from the core optimizer and produces a VideoClip for the final render
+
     # initialise audio reference points
     midpoints = {}
     midlefts = {}
@@ -151,7 +132,6 @@ def renderVideoFromCutList(filenamesToClips, cutList, startTimes, maxFade=5):
         filename = shotFilenames[i]
         print("normalising audio")
         audioClipCopy = filenamesToClips[filename].set_start(startTimes[filename]).fx(audio_normalize)
-        #a.append(VideoFileClip(filename).fx(afx.audio_normalize))
 
         # each audio clip starts from zero outside the clip, fades up to 1 at a point inside the clip,
         # and then at some point fades down from 1 to 0 across the next cut

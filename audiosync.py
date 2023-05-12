@@ -167,9 +167,13 @@ def corrabs(s1, s2):
     ca = np.absolute(corr)
     xmax = np.argmax(ca)
 
-    # modified to test against 90th percentile
-    percent90 = np.percentile(ca, 90)
-    relSpikeHeight = ca[xmax] / percent90
+    # modified to test against standard deviation
+    #percent90 = np.percentile(ca, 90)
+    #relSpikeHeight = ca[xmax] / percent90
+    std = np.std(ca)
+    print("ca[xmax+100]",ca[xmax+100])
+    print("std:",std)
+    relSpikeHeight = ca[xmax] / std
     return ls1, ls2, padsize, xmax, ca, relSpikeHeight
 
 
@@ -240,6 +244,7 @@ def file_offset(**ka):
     global take, normalize, denoise, lowpass
     in1, in2, take, show = ka['in1'], ka['in2'], ka['take'], ka['show']
     normalize, denoise, lowpass = ka['normalize'], ka['denoise'], ka['lowpass']
+
     fs, s1, s2 = read_normalized(in1, in2)
 
     # modified to unpack relSpikeHeight
